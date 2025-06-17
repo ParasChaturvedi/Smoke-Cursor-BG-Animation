@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smoke Gradient Background</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 200vh;
+      overflow-x: hidden;
+    }
+
+    #bgCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background: black;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 20vh 10vw;
+      color: white;
+      font-size: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div class="content">
+    <h1>Scroll to feel the smoke gradient on black</h1>
+    <p>Background animates like smoke and responds to scroll.</p>
+  </div>
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <script>
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h;
+
+    function resizeCanvas() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Setup particles
+    const particles = [];
+    const colors = ['rgba(255,255,255,0.03)', 'rgba(255,192,203,0.02)', 'rgba(173,216,230,0.02)'];
+
+    for (let i = 0; i < 150; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 80 + 50,
+        dx: Math.random() * 0.5 - 0.25,
+        dy: Math.random() * 0.5 - 0.25,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'lighter';
+
+      particles.forEach(p => {
+        ctx.beginPath();
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        gradient.addColorStop(0, p.color);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // update positions
+        p.x += p.dx;
+        p.y += p.dy;
+
+        if (p.x < 0 || p.x > w) p.dx *= -1;
+        if (p.y < 0 || p.y > h) p.dy *= -1;
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    // Scroll interaction to increase smoke speed
+    let speedFactor = 1;
+
+    gsap.to({}, {
+      scrollTrigger: {
+        trigger: ".content",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+        onUpdate: (self) => {
+          speedFactor = 1 + self.progress * 4;
+          particles.forEach(p => {
+            p.dx *= speedFactor;
+            p.dy *= speedFactor;
+          });
+        }
+      }
+    });
+
+    // Optional: slight movement based on mouse
+    document.addEventListener('mousemove', e => {
+      const mx = e.clientX / w - 0.5;
+      const my = e.clientY / h - 0.5;
+      particles.forEach(p => {
+        p.dx += mx * 0.01;
+        p.dy += my * 0.01;
+      });
+    });
+  </script>
+</body>
+</html>
